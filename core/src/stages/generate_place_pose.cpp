@@ -93,26 +93,26 @@ void GeneratePlacePose::compute() {
 	const moveit::core::AttachedBody* object
 	      = robot_state.getAttachedBody(props.get<std::string>("object"));
 	// current object_pose w.r.t. planning frame
-	const Eigen::Isometry3d& orig_object_pose = object->getGlobalCollisionBodyTransforms()[0];
+	const Eigen::Affine3d& orig_object_pose = object->getGlobalCollisionBodyTransforms()[0];
 
 	const geometry_msgs::PoseStamped& pose_msg = props.get<geometry_msgs::PoseStamped>("pose");
-	Eigen::Isometry3d target_pose;
+	Eigen::Affine3d target_pose;
 	tf::poseMsgToEigen(pose_msg.pose, target_pose);
 	// target pose w.r.t. planning frame
 	scene->getTransforms().transformPose(pose_msg.header.frame_id, target_pose, target_pose);
 
 	const geometry_msgs::PoseStamped& ik_frame_msg = props.get<geometry_msgs::PoseStamped>("ik_frame");
-	Eigen::Isometry3d ik_frame;
+	Eigen::Affine3d ik_frame;
 	tf::poseMsgToEigen(ik_frame_msg.pose, ik_frame);
 	ik_frame = robot_state.getGlobalLinkTransform(ik_frame_msg.header.frame_id) * ik_frame;
-	Eigen::Isometry3d object_to_ik = orig_object_pose.inverse() * ik_frame;
+	Eigen::Affine3d object_to_ik = orig_object_pose.inverse() * ik_frame;
 
 	// spawn the nominal target object pose, considering flip about z and rotations about z-axis
 	auto spawner = [&s, &scene, &object_to_ik, this]
-	               (const Eigen::Isometry3d& nominal, uint z_flips, uint z_rotations = 10) {
+	               (const Eigen::Affine3d& nominal, uint z_flips, uint z_rotations = 10) {
 		for (uint flip = 0; flip < z_flips; ++flip) {
 			// flip about object's x-axis
-			Eigen::Isometry3d object = nominal * Eigen::AngleAxisd(flip * M_PI, Eigen::Vector3d::UnitX());
+			Eigen::Affine3d object = nominal * Eigen::AngleAxisd(flip * M_PI, Eigen::Vector3d::UnitX());
 			for (uint i = 0; i < z_rotations; ++i) {
 				// rotate object at target pose about world's z-axis
 				Eigen::Vector3d pos = object.translation();

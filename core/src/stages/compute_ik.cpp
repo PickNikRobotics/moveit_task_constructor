@@ -67,7 +67,7 @@ ComputeIK::ComputeIK(const std::string &name, Stage::pointer &&child)
 	p.declare<geometry_msgs::PoseStamped>("target_pose", "goal pose for ik frame");
 }
 
-void ComputeIK::setIKFrame(const Eigen::Isometry3d &pose, const std::string &link)
+void ComputeIK::setIKFrame(const Eigen::Affine3d &pose, const std::string &link)
 {
 	geometry_msgs::PoseStamped pose_msg;
 	pose_msg.header.frame_id = link;
@@ -75,7 +75,7 @@ void ComputeIK::setIKFrame(const Eigen::Isometry3d &pose, const std::string &lin
 	setIKFrame(pose_msg);
 }
 
-void ComputeIK::setTargetPose(const Eigen::Isometry3d &pose, const std::string &frame)
+void ComputeIK::setTargetPose(const Eigen::Affine3d &pose, const std::string &frame)
 {
 	geometry_msgs::PoseStamped pose_msg;
 	pose_msg.header.frame_id = frame;
@@ -91,7 +91,7 @@ namespace {
 // ??? TODO: provide callback methods in PlanningScene class / probably not very useful here though...
 // TODO: move into MoveIt! core, lift active_components_only_ from fcl to common interface
 bool isTargetPoseColliding(const planning_scene::PlanningScenePtr& scene,
-                           Eigen::Isometry3d pose, const robot_model::LinkModel* link,
+                           Eigen::Affine3d pose, const robot_model::LinkModel* link,
                            collision_detection::CollisionResult* collision_result = nullptr)
 {
 	robot_state::RobotState& robot_state = scene->getCurrentStateNonConst();
@@ -260,7 +260,7 @@ void ComputeIK::compute()
 	if (target_pose_msg.header.frame_id.empty())  // if not provided, assume planning frame
 		target_pose_msg.header.frame_id = sandbox_scene->getPlanningFrame();
 
-	Eigen::Isometry3d target_pose;
+	Eigen::Affine3d target_pose;
 	tf::poseMsgToEigen(target_pose_msg.pose, target_pose);
 	if (target_pose_msg.header.frame_id != sandbox_scene->getPlanningFrame()) {
 		if (!sandbox_scene->knowsFrameTransform(target_pose_msg.header.frame_id)) {
@@ -286,7 +286,7 @@ void ComputeIK::compute()
 		ik_pose_msg.pose.orientation.w = 1.0;
 	} else {
 		ik_pose_msg = boost::any_cast<geometry_msgs::PoseStamped>(value);
-		Eigen::Isometry3d ik_pose;
+		Eigen::Affine3d ik_pose;
 		tf::poseMsgToEigen(ik_pose_msg.pose, ik_pose);
 		if (robot_model->hasLinkModel(ik_pose_msg.header.frame_id)) {
 			link = robot_model->getLinkModel(ik_pose_msg.header.frame_id);
@@ -297,7 +297,7 @@ void ComputeIK::compute()
 				ROS_WARN_STREAM_NAMED("ComputeIK", "Unknown frame: " << ik_pose_msg.header.frame_id);
 				return;
 			}
-			const EigenSTL::vector_Isometry3d& tf = attached->getFixedTransforms();
+			const EigenSTL::vector_Affine3d& tf = attached->getFixedTransforms();
 			if (tf.empty()) {
 				ROS_WARN_STREAM_NAMED("ComputeIK", "Attached body doesn't have shapes.");
 				return;
