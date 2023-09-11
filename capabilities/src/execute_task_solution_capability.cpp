@@ -196,6 +196,7 @@ bool ExecuteTaskSolutionCapability::constructMotionPlan(const moveit_task_constr
 
 	// always include initial scene diff
 	std::vector<moveit_msgs::msg::PlanningScene> scene_diffs = { solution.sub_trajectory[0].scene_diff };
+	scene_diffs.reserve(1);  // number of diffs used by all sub trajectories besides the first one
 	for (size_t i = 0; i < solution.sub_trajectory.size(); ++i) {
 		const moveit_task_constructor_msgs::msg::SubTrajectory& sub_traj = solution.sub_trajectory[i];
 
