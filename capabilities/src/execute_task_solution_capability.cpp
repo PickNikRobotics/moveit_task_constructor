@@ -94,14 +94,14 @@ void ExecuteTaskSolutionCapability::initialize() {
 	                                             std::placeholders::_1, std::placeholders::_2)),
 	    ActionServerType::CancelCallback(
 	        std::bind(&ExecuteTaskSolutionCapability::preemptCallback, this, std::placeholders::_1)),
-	    [this](const std::shared_ptr<rclcpp_action::ServerGoalHandle<ExecuteTaskSolutionAction>> goal_handle) {
-		    last_goal_future_ =
-		        std::async(std::launch::async, &ExecuteTaskSolutionCapability::goalCallback, this, goal_handle);
+	    [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<ExecuteTaskSolutionAction>> goal_handle) {
+		    last_goal_future_ = std::async(std::launch::async, &ExecuteTaskSolutionCapability::goalCallback, this,
+		                                   std::move(goal_handle));
 	    });
 }
 
 void ExecuteTaskSolutionCapability::goalCallback(
-    const std::shared_ptr<rclcpp_action::ServerGoalHandle<ExecuteTaskSolutionAction>>& goal_handle) {
+    const std::shared_ptr<rclcpp_action::ServerGoalHandle<ExecuteTaskSolutionAction>> goal_handle) {
 	auto result = std::make_shared<moveit_task_constructor_msgs::action::ExecuteTaskSolution::Result>();
 
 	const auto& goal = goal_handle->get_goal();
@@ -176,19 +176,18 @@ bool ExecuteTaskSolutionCapability::constructMotionPlan(const moveit_task_constr
 	    };
 
 	auto make_apply_planning_scene_diff_cb = [this](const std::vector<moveit_msgs::msg::PlanningScene>& scene_diffs) {
-		return
-		    [this, scene_diffs = std::move(scene_diffs)](const plan_execution::ExecutableMotionPlan* /*plan*/) mutable {
-			    for (auto& scene_diff : scene_diffs) {
-				    if (!moveit::core::isEmpty(scene_diff)) {
-					    /* RCLCPP_DEBUG_STREAM(LOGGER, "apply effect of " << description); */
-					    scene_diff.robot_state.joint_state = sensor_msgs::msg::JointState();
-					    scene_diff.robot_state.multi_dof_joint_state = sensor_msgs::msg::MultiDOFJointState();
-					    if (!context_->planning_scene_monitor_->newPlanningSceneMessage(scene_diff))
-						    return false;
-				    }
-			    }
-			    return true;
-		    };
+		return [=, this](const plan_execution::ExecutableMotionPlan* /*plan*/) mutable {
+			for (auto& scene_diff : scene_diffs) {
+				if (!moveit::core::isEmpty(scene_diff)) {
+					/* RCLCPP_DEBUG_STREAM(LOGGER, "apply effect of " << description); */
+					scene_diff.robot_state.joint_state = sensor_msgs::msg::JointState();
+					scene_diff.robot_state.multi_dof_joint_state = sensor_msgs::msg::MultiDOFJointState();
+					if (!context_->planning_scene_monitor_->newPlanningSceneMessage(scene_diff))
+						return false;
+				}
+			}
+			return true;
+		};
 	};
 	auto make_description = [size = solution.sub_trajectory.size()](const std::size_t index) {
 		return std::to_string(index + 1) + "/" + std::to_string(size);
