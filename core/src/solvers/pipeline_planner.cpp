@@ -85,23 +85,21 @@ PipelinePlanner::PipelinePlanner(
 	properties().declare<double>("goal_position_tolerance", 1e-4, "tolerance for reaching position goals");
 	properties().declare<double>("goal_orientation_tolerance", 1e-4, "tolerance for reaching orientation goals");
 	// Declare properties that configure the planning pipeline
-	properties().declare<bool>("display_motion_plans", false,
-	                           "publish generated solutions on topic " +
-	                               planning_pipeline::PlanningPipeline::DISPLAY_PATH_TOPIC);
-	properties().declare<bool>("publish_planning_requests", false,
-	                           "publish motion planning requests on topic " +
-	                               planning_pipeline::PlanningPipeline::MOTION_PLAN_REQUEST_TOPIC);
+	properties().declare<std::unordered_map<std::string, std::string>>(
+	    "pipeline_id_planner_id_map", std::unordered_map<std::string, std::string>(),
+	    "Set of pipelines and planners used for planning");
 }
 
 bool PipelinePlanner::setPlannerId(const std::string& pipeline_name, const std::string& planner_id) {
 	// Only set ID if pipeline exists. It is not possible to create new pipelines with this command.
-	if (pipeline_id_planner_id_map_.count(pipeline_name) > 0) {
-		pipeline_id_planner_id_map_[pipeline_name] = planner_id;
+	if (pipeline_id_planner_id_map_.count(pipeline_name) == 0) {
+		RCLCPP_ERROR(node_->get_logger(),
+		             "PipelinePlanner does not have a pipeline called '%s'. Cannot set pipeline ID '%s'",
+		             pipeline_name.c_str(), planner_id.c_str());
+		return false;
 	}
-	RCLCPP_ERROR(node_->get_logger(),
-	             "PipelinePlanner does not have a pipeline called '%s'. Cannot set pipeline ID '%s'",
-	             pipeline_name.c_str(), planner_id.c_str());
-	return false;
+	pipeline_id_planner_id_map_[pipeline_name] = planner_id;
+	return true;
 }
 
 void PipelinePlanner::setStoppingCriterionFunction(
@@ -121,6 +119,11 @@ void PipelinePlanner::init(const core::RobotModelConstPtr& robot_model) {
 		planning_pipelines_ = moveit::planning_pipeline_interfaces::createPlanningPipelineMap(
 		    [&]() {
 			    // Create pipeline name vector from the keys of pipeline_id_planner_id_map_
+			    if (pipeline_id_planner_id_map_.empty()) {
+				    throw std::runtime_error("Cannot initialize PipelinePlanner: No planning pipeline was provided and "
+				                             "pipeline_id_planner_id_map_ is empty!");
+			    }
+
 			    std::vector<std::string> pipeline_names;
 			    for (const auto& pipeline_name_planner_id_pair : pipeline_id_planner_id_map_) {
 				    pipeline_names.push_back(pipeline_name_planner_id_pair.first);
@@ -130,10 +133,10 @@ void PipelinePlanner::init(const core::RobotModelConstPtr& robot_model) {
 		    robot_model, node_);
 	}
 
-	// Configure all pipelines according to the configuration in properties
-	for (auto const& name_pipeline_pair : planning_pipelines_) {
-		name_pipeline_pair.second->displayComputedMotionPlans(properties().get<bool>("display_motion_plans"));
-		name_pipeline_pair.second->publishReceivedRequests(properties().get<bool>("publish_planning_requests"));
+	// Check if it is still empty
+	if (planning_pipelines_.empty()) {
+		throw std::runtime_error(
+		    "Cannot initialize PipelinePlanner: Could not create any valid entries for planning pipeline maps!");
 	}
 }
 
@@ -176,7 +179,11 @@ bool PipelinePlanner::plan(const planning_scene::PlanningSceneConstPtr& planning
 	std::vector<moveit_msgs::msg::MotionPlanRequest> requests;
 	requests.reserve(pipeline_id_planner_id_map_.size());
 
-	for (auto const& pipeline_id_planner_id_pair : pipeline_id_planner_id_map_) {
+	auto const property_pipeline_id_planner_id_map =
+	    properties().get<std::unordered_map<std::string, std::string>>("pipeline_id_planner_id_map");
+	for (auto const& pipeline_id_planner_id_pair :
+	     (!property_pipeline_id_planner_id_map.empty() ? property_pipeline_id_planner_id_map :
+                                                        pipeline_id_planner_id_map_)) {
 		// Check that requested pipeline exists and skip it if it doesn't exist
 		if (planning_pipelines_.find(pipeline_id_planner_id_pair.first) == planning_pipelines_.end()) {
 			RCLCPP_WARN(
