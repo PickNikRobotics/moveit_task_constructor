@@ -180,7 +180,6 @@ bool ExecuteTaskSolutionCapability::constructMotionPlan(const moveit_task_constr
 			for (auto& scene_diff : scene_diffs) {
 				if (!moveit::core::isEmpty(scene_diff)) {
 					/* RCLCPP_DEBUG_STREAM(LOGGER, "apply effect of " << description); */
-					// moveit_msgs::msg::PlanningScene scene_diff = const_scene_diff;
 					scene_diff.robot_state.joint_state = sensor_msgs::msg::JointState();
 					scene_diff.robot_state.multi_dof_joint_state = sensor_msgs::msg::MultiDOFJointState();
 					if (!context_->planning_scene_monitor_->newPlanningSceneMessage(scene_diff))
