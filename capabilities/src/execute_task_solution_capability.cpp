@@ -176,7 +176,7 @@ bool ExecuteTaskSolutionCapability::constructMotionPlan(const moveit_task_constr
 	    };
 
 	auto make_apply_planning_scene_diff_cb = [this](const std::vector<moveit_msgs::msg::PlanningScene>& scene_diffs) {
-		return [=, this](const plan_execution::ExecutableMotionPlan* /*plan*/) mutable {
+		return [this, scene_diffs = scene_diffs](const plan_execution::ExecutableMotionPlan* /*plan*/) mutable {
 			for (auto& scene_diff : scene_diffs) {
 				if (!moveit::core::isEmpty(scene_diff)) {
 					/* RCLCPP_DEBUG_STREAM(LOGGER, "apply effect of " << description); */
@@ -220,5 +220,5 @@ bool ExecuteTaskSolutionCapability::constructMotionPlan(const moveit_task_constr
 
 }  // namespace move_group
 
-#include <class_loader/class_loader.hpp>
-CLASS_LOADER_REGISTER_CLASS(move_group::ExecuteTaskSolutionCapability, move_group::MoveGroupCapability)
+#include <pluginlib/class_list_macros.hpp>
+PLUGINLIB_EXPORT_CLASS(move_group::ExecuteTaskSolutionCapability, move_group::MoveGroupCapability)
