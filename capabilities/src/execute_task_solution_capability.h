@@ -63,7 +63,7 @@ private:
 	bool constructMotionPlan(const moveit_task_constructor_msgs::msg::Solution& solution,
 	                         plan_execution::ExecutableMotionPlan& plan);
 
-	void goalCallback(const std::shared_ptr<rclcpp_action::ServerGoalHandle<ExecuteTaskSolutionAction>> goal_handle);
+	void goalCallback(const std::shared_ptr<rclcpp_action::ServerGoalHandle<ExecuteTaskSolutionAction>>& goal_handle);
 
 	rclcpp_action::CancelResponse
 	preemptCallback(const std::shared_ptr<rclcpp_action::ServerGoalHandle<ExecuteTaskSolutionAction>>& goal_handle);
