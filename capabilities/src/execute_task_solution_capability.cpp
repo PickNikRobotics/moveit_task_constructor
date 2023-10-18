@@ -101,7 +101,7 @@ void ExecuteTaskSolutionCapability::initialize() {
 }
 
 void ExecuteTaskSolutionCapability::goalCallback(
-    const std::shared_ptr<rclcpp_action::ServerGoalHandle<ExecuteTaskSolutionAction>> goal_handle) {
+    const std::shared_ptr<rclcpp_action::ServerGoalHandle<ExecuteTaskSolutionAction>>& goal_handle) {
 	auto result = std::make_shared<moveit_task_constructor_msgs::action::ExecuteTaskSolution::Result>();
 
 	const auto& goal = goal_handle->get_goal();
