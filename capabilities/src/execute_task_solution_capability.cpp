@@ -192,26 +192,29 @@ bool ExecuteTaskSolutionCapability::constructMotionPlan(const moveit_task_constr
 	auto make_description = [size = solution.sub_trajectory.size()](const std::size_t index) {
 		return std::to_string(index + 1) + "/" + std::to_string(size);
 	};
-	// TODO: Case for only one subtrajectory
-	if (!make_executable_trajectory(solution.sub_trajectory[0], make_description(0),
-	                                make_apply_planning_scene_diff_cb({ solution.sub_trajectory[0].scene_diff,
-	                                                                    solution.sub_trajectory[1].scene_diff })))
-		return false;
-	for (size_t i = 1; i < solution.sub_trajectory.size() - 1; ++i) {
+
+	// always include initial scene diff
+	std::vector<moveit_msgs::msg::PlanningScene> scene_diffs = { solution.sub_trajectory[0].scene_diff };
+	scene_diffs.reserve(1);  // number of diffs used by all sub trajectories besides the first one
+	for (size_t i = 0; i < solution.sub_trajectory.size(); ++i) {
 		const moveit_task_constructor_msgs::msg::SubTrajectory& sub_traj = solution.sub_trajectory[i];
 
 		// define individual variable for use in closure below
 		const std::string description = make_description(i);
-		if (!make_executable_trajectory(sub_traj, description,
-		                                make_apply_planning_scene_diff_cb({ solution.sub_trajectory[i + 1].scene_diff })))
+
+		// apply scene diff of following sub trajectory
+		if (i < solution.sub_trajectory.size() - 1) {
+			scene_diffs.push_back(solution.sub_trajectory[i + 1].scene_diff);
+		}
+		if (!make_executable_trajectory(sub_traj, description, make_apply_planning_scene_diff_cb(scene_diffs)))
 			return false;
 		if (!moveit::core::isEmpty(sub_traj.scene_diff.robot_state) &&
 		    !moveit::core::robotStateMsgToRobotState(sub_traj.scene_diff.robot_state, state, true)) {
 			RCLCPP_ERROR_STREAM(LOGGER, "invalid intermediate robot state in scene diff of subtrajectory " << description);
 			return false;
 		}
+		scene_diffs.clear();
 	}
-	make_executable_trajectory(solution.sub_trajectory.back(), make_description(solution.sub_trajectory.size() - 1), {});
 	return true;
 }
 
