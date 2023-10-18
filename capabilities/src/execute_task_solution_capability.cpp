@@ -94,9 +94,9 @@ void ExecuteTaskSolutionCapability::initialize() {
 	                                             std::placeholders::_1, std::placeholders::_2)),
 	    ActionServerType::CancelCallback(
 	        std::bind(&ExecuteTaskSolutionCapability::preemptCallback, this, std::placeholders::_1)),
-	    [this](std::shared_ptr<rclcpp_action::ServerGoalHandle<ExecuteTaskSolutionAction>> goal_handle) {
-		    last_goal_future_ = std::async(std::launch::async, &ExecuteTaskSolutionCapability::goalCallback, this,
-		                                   std::move(goal_handle));
+	    [this](const std::shared_ptr<rclcpp_action::ServerGoalHandle<ExecuteTaskSolutionAction>>& goal_handle) {
+		    last_goal_future_ =
+		        std::async(std::launch::async, &ExecuteTaskSolutionCapability::goalCallback, this, goal_handle);
 	    });
 }
 
