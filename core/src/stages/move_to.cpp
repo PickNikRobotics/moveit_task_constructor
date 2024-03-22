@@ -119,8 +119,8 @@ bool MoveTo::getJointStateGoal(const boost::any& goal, const moveit::core::Joint
 		if (!msg.is_diff)
 			throw InitStageException(*this, "Expecting a diff state");
 
-		// validate specified joints
-		const auto& accepted = jmg->getJointModelNames();
+		// validate specified joints, we compare variable names to allow namespaced multi-dof joints
+		const auto& accepted = jmg->getVariableNames();
 		for (const auto& name : msg.joint_state.name)
 			if (std::find(accepted.begin(), accepted.end(), name) == accepted.end())
 				throw InitStageException(*this, "Joint '" + name + "' is not part of group '" + jmg->getName() + "'");
