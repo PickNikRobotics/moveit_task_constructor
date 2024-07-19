@@ -1,12 +1,13 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
-from __future__ import print_function
 import unittest
-import rostest
-from moveit_commander.roscpp_initializer import roscpp_initialize
-from moveit_commander import PlanningSceneInterface
+import rclcpp
 from moveit.task_constructor import core, stages
 from geometry_msgs.msg import PoseStamped
+
+
+def setUpModule():
+    rclcpp.init()
 
 
 def make_pose(x, y, z):
@@ -28,7 +29,9 @@ class TestModifyPlanningScene(unittest.TestCase):
         self.make_box = self.psi._PlanningSceneInterface__make_box
         # insert a box to collide with
         self.psi.add_box("box", make_pose(0.8, 0.25, 1.25), [0.2, 0.2, 0.2])
+        self.node = rclcpp.Node("test_mtc")
         self.task = task = core.Task()
+        self.task.loadRobotModel(self.node)
         task.add(stages.CurrentState("current"))
 
     def insertMove(self, position=-1):
@@ -113,5 +116,4 @@ class TestModifyPlanningScene(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    roscpp_initialize("test_mtc")
-    rostest.rosrun("mtc", "mps", TestModifyPlanningScene)
+    unittest.main()

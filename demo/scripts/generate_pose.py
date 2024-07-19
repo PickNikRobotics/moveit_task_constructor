@@ -1,18 +1,21 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from moveit.task_constructor import core, stages
 from geometry_msgs.msg import PoseStamped
-from moveit_commander.roscpp_initializer import roscpp_initialize
+import rclcpp
 import time
 
-roscpp_initialize("mtc_tutorial_compute_ik")
+rclcpp.init()
+node = rclcpp.Node("mtc_tutorial")
 
 # Specify the planning group
 group = "panda_arm"
 
 # Create a task
 task = core.Task()
+task.name = "generate pose"
+task.loadRobotModel(node)
 
 # Get the current robot state
 currentState = stages.CurrentState("current state")
@@ -20,8 +23,7 @@ task.add(currentState)
 
 # Create a planner instance that is used to connect
 # the current state to the grasp approach pose
-pipelinePlanner = core.PipelinePlanner()
-pipelinePlanner.planner = "RRTConnectkConfigDefault"
+pipelinePlanner = core.PipelinePlanner(node, "ompl", "RRTConnectkConfigDefault")
 planners = [(group, pipelinePlanner)]
 
 # Connect the two stages

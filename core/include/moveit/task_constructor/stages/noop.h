@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2020, Hamburg University
+ *  Copyright (c) 2024, Sherbrooke University
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the copyright holders nor the names of their
+ *   * Neither the name of Bielefeld University nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -31,20 +31,34 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
-/* Author: Michael 'v4hn' Goerner */
+/* Authors: Captain Yoshi */
 
-#include <moveit/task_constructor/stages/passthrough.h>
+#pragma once
+
+#include <moveit/task_constructor/stage.h>
+#include <moveit/planning_scene/planning_scene.h>
 
 namespace moveit {
 namespace task_constructor {
 namespace stages {
 
-PassThrough::PassThrough(const std::string& name, Stage::pointer&& child) : WrapperBase(name, std::move(child)) {}
+/** no-op stage, which doesn't modify the interface state nor adds a trajectory.
+ *  However, it can be used to store custom stage properties,
+ *  which in turn can be queried post-planning to steer the execution.
+ */
 
-void PassThrough::onNewSolution(const SolutionBase& s) {
-	this->liftSolution(s);
-}
+class NoOp : public PropagatingEitherWay
+{
+public:
+	NoOp(const std::string& name = "no-op") : PropagatingEitherWay(name){};
 
+private:
+	bool compute(const InterfaceState& state, planning_scene::PlanningScenePtr& scene, SubTrajectory& /*trajectory*/,
+	             Interface::Direction /*dir*/) override {
+		scene = state.scene()->diff();
+		return true;
+	};
+};
 }  // namespace stages
 }  // namespace task_constructor
 }  // namespace moveit

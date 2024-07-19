@@ -36,7 +36,9 @@
 #include <moveit/task_constructor/solvers/cartesian_path.h>
 #include <moveit/task_constructor/solvers/pipeline_planner.h>
 #include <moveit/task_constructor/solvers/joint_interpolation.h>
-#include <moveit_msgs/WorkspaceParameters.h>
+#include <moveit/task_constructor/solvers/multi_planner.h>
+#include <moveit_msgs/msg/workspace_parameters.hpp>
+#include "utils.h"
 
 namespace py = pybind11;
 using namespace py::literals;
@@ -47,6 +49,7 @@ PYBIND11_SMART_HOLDER_TYPE_CASTERS(PlannerInterface)
 PYBIND11_SMART_HOLDER_TYPE_CASTERS(PipelinePlanner)
 PYBIND11_SMART_HOLDER_TYPE_CASTERS(JointInterpolationPlanner)
 PYBIND11_SMART_HOLDER_TYPE_CASTERS(CartesianPath)
+PYBIND11_SMART_HOLDER_TYPE_CASTERS(MultiPlanner)
 
 namespace moveit {
 namespace python {
@@ -66,11 +69,9 @@ void export_solvers(py::module& m) {
 				from moveit.task_constructor import core
 
 				# Create and configure a planner instance
-				pipelinePlanner = core.PipelinePlanner()
-				pipelinePlanner.planner = 'PRMkConfigDefault'
+				pipelinePlanner = core.PipelinePlanner(node, 'ompl', 'PRMkConfigDefault')
 				pipelinePlanner.num_planning_attempts = 10
 			)")
-	    .property<std::string>("planner", "str: Planner ID")
 	    .property<uint>("num_planning_attempts", "int: Number of planning attempts")
 	    .property<moveit_msgs::msg::WorkspaceParameters>(
 	        "workspace_parameters",
@@ -78,7 +79,8 @@ void export_solvers(py::module& m) {
 	    .property<double>("goal_joint_tolerance", "float: Tolerance for reaching joint goals")
 	    .property<double>("goal_position_tolerance", "float: Tolerance for reaching position goals")
 	    .property<double>("goal_orientation_tolerance", "float: Tolerance for reaching orientation goals")
-	    .def(py::init<const std::string&>(), "pipeline"_a = std::string("ompl"));
+	    .def(py::init<const rclcpp::Node::SharedPtr&, const std::string&, const std::string&>(), "node"_a,
+	         "pipeline"_a = std::string("ompl"), "planner_id"_a = std::string(""));
 
 	properties::class_<JointInterpolationPlanner, PlannerInterface>(
 	    m, "JointInterpolationPlanner",
@@ -113,6 +115,27 @@ void export_solvers(py::module& m) {
 	        "float: Limit joint displacement between consecutive waypoints, thus preventing jumps in joint space. "
 	        "This values specifies the fraction of mean acceptable joint motion per step.")
 	    .property<double>("min_fraction", "float: Fraction of overall distance required to succeed.")
+	    .def(py::init<>());
+
+	properties::class_<MultiPlanner, PlannerInterface>(m, "MultiPlanner", R"(
+			A meta planner that runs multiple alternative planners in sequence and returns the first found solution. ::
+
+				from moveit.task_constructor import core
+
+				# Instantiate MultiPlanner
+				multiPlanner = core.MultiPlanner()
+		)")
+	    .def("__len__", &MultiPlanner::size)
+	    .def("__getitem__", &get_item<MultiPlanner>)
+	    .def(
+	        "add",
+	        [](MultiPlanner& self, const py::args& args) {
+		        for (auto it = args.begin(), end = args.end(); it != end; ++it)
+			        self.push_back(it->cast<PlannerInterfacePtr>());
+	        },
+	        "Insert one or more planners")
+	    .def(
+	        "clear", [](MultiPlanner& self) { self.clear(); }, "Remove all planners")
 	    .def(py::init<>());
 }
 }  // namespace python

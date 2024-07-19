@@ -1,10 +1,8 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function
 import unittest
-import rostest
-from moveit_commander.roscpp_initializer import roscpp_initialize
+import rclcpp
 from moveit.task_constructor import core, stages
 from moveit.core.planning_scene import PlanningScene
 from geometry_msgs.msg import Vector3Stamped, Vector3, PoseStamped
@@ -12,11 +10,21 @@ from std_msgs.msg import Header
 
 PLANNING_GROUP = "manipulator"
 
-pybind11_versions = [
-    k for k in __builtins__.__dict__.keys() if k.startswith("__pybind11_internals_v")
-]
+
+def setUpModule():
+    rclcpp.init()
+
+
+def pybind11_versions():
+    try:
+        keys = __builtins__.keys()  # for use with pytest
+    except AttributeError:
+        keys = __builtins__.__dict__.keys()  # use from cmdline
+    return [k for k in keys if k.startswith("__pybind11_internals_v")]
+
+
 incompatible_pybind11_msg = "MoveIt and MTC use incompatible pybind11 versions: " + "\n- ".join(
-    pybind11_versions
+    pybind11_versions()
 )
 
 
@@ -91,9 +99,11 @@ class TestTrampolines(unittest.TestCase):
     def setUp(self):
         self.cartesian = core.CartesianPath()
         self.jointspace = core.JointInterpolationPlanner()
+        self.node = rclcpp.Node("test_mtc")
 
     def create(self, *stages):
         task = core.Task()
+        task.loadRobotModel(self.node)
         task.enableIntrospection()
         for stage in stages:
             task.add(stage)
@@ -106,12 +116,12 @@ class TestTrampolines(unittest.TestCase):
         if wait:
             input("Waiting for any key (allows inspection in rviz)")
 
-    @unittest.skipIf(len(pybind11_versions) > 1, incompatible_pybind11_msg)
+    @unittest.skipIf(len(pybind11_versions()) > 1, incompatible_pybind11_msg)
     def test_generator(self):
         task = self.create(PyGenerator())
         self.plan(task, expected_solutions=PyGenerator.max_calls)
 
-    @unittest.skipIf(len(pybind11_versions) > 1, incompatible_pybind11_msg)
+    @unittest.skipIf(len(pybind11_versions()) > 1, incompatible_pybind11_msg)
     def test_monitoring_generator(self):
         task = self.create(
             stages.CurrentState("current"),
@@ -131,5 +141,4 @@ class TestTrampolines(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    roscpp_initialize("test_mtc")
-    rostest.rosrun("mtc", "trampoline", TestTrampolines)
+    unittest.main()

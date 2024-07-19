@@ -1,21 +1,22 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from moveit.core import planning_scene
 from moveit.task_constructor import core, stages
-from moveit_commander.roscpp_initializer import roscpp_initialize
+import rclcpp
 from moveit.core.planning_scene import PlanningScene
 import time
 
-roscpp_initialize("mtc_tutorial_current_state")
-
+rclcpp.init()
+node = rclcpp.Node("mtc_tutorial")
 
 # Create a task
 task = core.Task()
+task.name = "fixed state"
 
 # [initAndConfigFixedState]
 # Initialize a PlanningScene for use in a FixedState stage
-task.loadRobotModel()  # load the robot model (usually done in init())
+task.loadRobotModel(node)  # load the robot model (usually done in init())
 planningScene = PlanningScene(task.getRobotModel())
 
 # Create a FixedState stage and pass the created PlanningScene as its state

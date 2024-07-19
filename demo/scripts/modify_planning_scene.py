@@ -1,17 +1,20 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from moveit.task_constructor import core, stages
 from moveit_msgs.msg import CollisionObject
 from shape_msgs.msg import SolidPrimitive
 from geometry_msgs.msg import PoseStamped
-from moveit_commander.roscpp_initializer import roscpp_initialize
+import rclcpp
 import time
 
-roscpp_initialize("mtc_tutorial_modify_planning_scene")
+rclcpp.init()
+node = rclcpp.Node("mtc_tutorial")
 
 # Create a task
 task = core.Task()
+task.name = "modify planning scene"
+task.loadRobotModel(node)
 
 # Add the current state to the task hierarchy
 task.add(stages.CurrentState("current state"))

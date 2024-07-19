@@ -41,6 +41,7 @@
 #include <moveit/task_constructor/cost_terms.h>
 
 #include <moveit/planning_scene/planning_scene.h>
+#include <fmt/core.h>
 
 namespace moveit {
 namespace task_constructor {
@@ -60,8 +61,9 @@ void ModifyPlanningScene::attachObjects(const Names& objects, const std::string&
 
 void ModifyPlanningScene::addObject(const moveit_msgs::msg::CollisionObject& collision_object) {
 	if (collision_object.operation != moveit_msgs::msg::CollisionObject::ADD) {
-		RCLCPP_ERROR_STREAM(LOGGER, name() << ": addObject is called with object's operation not set "
-		                                      "to ADD -- ignoring the object");
+		RCLCPP_ERROR_STREAM(
+		    LOGGER,
+		    fmt::format("{}: addObject is called with object's operation not set to ADD -- ignoring the object", name()));
 		return;
 	}
 	collision_objects_.push_back(collision_object);
@@ -144,6 +146,17 @@ std::pair<InterfaceState, SubTrajectory> ModifyPlanningScene::apply(const Interf
 
 		if (callback_)
 			callback_(scene, properties());
+
+		// check for collisions
+		collision_detection::CollisionRequest req;
+		collision_detection::CollisionResult res;
+		req.contacts = true;
+		req.max_contacts = 1;
+		scene->checkCollision(req, res);
+		if (res.collision) {
+			const auto contact = res.contacts.begin()->second.front();
+			traj.markAsFailure(contact.body_name_1 + " colliding with " + contact.body_name_2);
+		}
 	} catch (const std::exception& e) {
 		traj.markAsFailure(e.what());
 	}

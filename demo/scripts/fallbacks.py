@@ -1,11 +1,12 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from moveit.task_constructor import core, stages
-from moveit_commander.roscpp_initializer import roscpp_initialize
+import rclcpp
 import time
 
-roscpp_initialize("mtc_tutorial_fallbacks")
+rclcpp.init()
+node = rclcpp.Node("mtc_tutorial")
 
 # use cartesian and joint interpolation planners
 cartesianPlanner = core.CartesianPath()
@@ -13,6 +14,8 @@ jointPlanner = core.JointInterpolationPlanner()
 
 # initialize the mtc task
 task = core.Task()
+task.name = "fallbacks"
+task.loadRobotModel(node)
 
 # add the current planning scene state to the task hierarchy
 currentState = stages.CurrentState("Current State")

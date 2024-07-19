@@ -119,6 +119,9 @@ public:
 	using WrapperBase::setTimeout;
 	using WrapperBase::timeout;
 
+	using WrapperBase::pruning;
+	using WrapperBase::setPruning;
+
 	/// reset all stages
 	void reset() final;
 	/// initialize all stages with given scene
@@ -126,8 +129,9 @@ public:
 
 	/// reset, init scene (if not yet done), and init all stages, then start planning
 	moveit::core::MoveItErrorCode plan(size_t max_solutions = 0);
-	/// interrupt current planning (or execution)
+	/// interrupt current planning
 	void preempt();
+	void resetPreemptRequest();
 	/// execute solution, return the result
 	moveit::core::MoveItErrorCode execute(const SolutionBase& s);
 

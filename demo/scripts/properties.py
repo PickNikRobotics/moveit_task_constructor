@@ -1,21 +1,14 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from moveit.task_constructor import core, stages
 from geometry_msgs.msg import PoseStamped
 import time
 
-from moveit_commander.roscpp_initializer import roscpp_initialize
+import rclcpp
 
-roscpp_initialize("mtc_tutorial")
-
-# Create a task container
-task = core.Task()
-
-# [propertyTut10]
-# Create a current state to capture the current planning scene state
-currentState = stages.CurrentState("Current State")
-# [propertyTut10]
+rclcpp.init()
+node = rclcpp.Node("mtc_tutorial")
 
 # [propertyTut1]
 # Create a property
@@ -86,15 +79,9 @@ for i in pm2:
     print(i, "\t\t", pm2[i])
 print("\n")
 
-# [propertyTut11]
+# [propertyTut10]
+# Create a stage
+stage = stages.CurrentState("Current State")
 # Access the property map of the stage
-props = currentState.properties
-# [propertyTut11]
-
-# Add the stage to the task hierarchy
-task.add(currentState)
-
-if task.plan():
-    task.publish(task.solutions[0])
-
-time.sleep(100)
+props = stage.properties
+# [propertyTut10]

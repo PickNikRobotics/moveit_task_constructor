@@ -1,13 +1,14 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from moveit_commander.roscpp_initializer import roscpp_initialize
+import rclcpp
 from moveit.task_constructor import core, stages
 from moveit_commander import PlanningSceneInterface
 from geometry_msgs.msg import PoseStamped, TwistStamped
 import time
 
-roscpp_initialize("pickplace")
+rclcpp.init()
+node = rclcpp.Node("mtc_tutorial")
 
 # [pickAndPlaceTut1]
 # Specify robot parameters
@@ -40,8 +41,8 @@ psi.add_box(object_name, objectPose, size=[0.1, 0.05, 0.03])
 
 # [pickAndPlaceTut3]
 # Create a task
-task = core.Task("PandaPickPipelineExample")
-task.enableIntrospection()
+task = core.Task()
+task.name = "pick + place"
 # [pickAndPlaceTut3]
 
 # [pickAndPlaceTut4]
@@ -51,8 +52,7 @@ task.add(stages.CurrentState("current"))
 # [initAndConfigConnect]
 # Create a planner instance that is used to connect
 # the current state to the grasp approach pose
-pipeline = core.PipelinePlanner()
-pipeline.planner = "RRTConnectkConfigDefault"
+pipeline = core.PipelinePlanner(node, "ompl", "RRTConnectkConfigDefault")
 planners = [(arm, pipeline)]
 
 # Connect the two stages

@@ -46,6 +46,8 @@
 #include <moveit/robot_model_loader/robot_model_loader.h>
 #include <moveit/planning_pipeline/planning_pipeline.h>
 
+#include <scope_guard/scope_guard.hpp>
+
 #include <functional>
 
 using namespace std::chrono_literals;
@@ -95,6 +97,7 @@ const ContainerBase* TaskPrivate::stages() const {
 
 Task::Task(const std::string& ns, bool introspection, ContainerBase::pointer&& container)
   : WrapperBase(new TaskPrivate(this, ns), std::move(container)) {
+	setPruning(false);
 	setTimeout(std::numeric_limits<double>::max());
 
 	// monitor state on commandline
@@ -236,6 +239,9 @@ void Task::compute() {
 }
 
 moveit::core::MoveItErrorCode Task::plan(size_t max_solutions) {
+	// ensure the preempt request is resetted once this method exits
+	auto guard = sg::make_scope_guard([this]() noexcept { this->resetPreemptRequest(); });
+
 	auto impl = pimpl();
 	init();
 
@@ -247,7 +253,6 @@ moveit::core::MoveItErrorCode Task::plan(size_t max_solutions) {
 		explainFailure();
 		return error_code;
 	};
-	impl->preempt_requested_ = false;
 	const double available_time = timeout();
 	const auto start_time = std::chrono::steady_clock::now();
 	while (canCompute() && (max_solutions == 0 || numSolutions() < max_solutions)) {
@@ -268,13 +273,14 @@ void Task::preempt() {
 	pimpl()->preempt_requested_ = true;
 }
 
+void Task::resetPreemptRequest() {
+	pimpl()->preempt_requested_ = false;
+}
+
 moveit::core::MoveItErrorCode Task::execute(const SolutionBase& s) {
 	// Add random ID to prevent warnings about multiple publishers within the same node
-	rclcpp::NodeOptions options;
-	options.arguments(
-	    { "--ros-args", "-r",
-	      "__node:=moveit_task_constructor_executor_" + std::to_string(reinterpret_cast<std::size_t>(this)) });
-	auto node = rclcpp::Node::make_shared("_", options);
+	auto node = rclcpp::Node::make_shared("moveit_task_constructor_executor_" +
+	                                      std::to_string(reinterpret_cast<std::size_t>(this)));
 	auto ac = rclcpp_action::create_client<moveit_task_constructor_msgs::action::ExecuteTaskSolution>(
 	    node, "execute_task_solution");
 	if (!ac->wait_for_action_server(0.5s)) {

@@ -1,37 +1,22 @@
 import unittest
 
-import launch_testing
-import pytest
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
-from launch_testing.actions import ReadyToTest
+from launch.actions import DeclareLaunchArgument, ExecuteProcess
+from launch.substitutions import PathJoinSubstitution, LaunchConfiguration
+import launch_testing
+from launch_testing.asserts import assertExitCodes
 from launch_testing.util import KeepAliveProc
-from moveit_configs_utils import MoveItConfigsBuilder
+from launch_testing.actions import ReadyToTest, GTest
+
+import pytest
 
 
 @pytest.mark.launch_test
 def generate_test_description():
-    moveit_config = (
-        MoveItConfigsBuilder("moveit_resources_panda")
-        .robot_description(file_path="config/panda.urdf.xacro")
-        .to_moveit_configs()
-    )
-
-    test_exec = Node(
-        executable=[
-            LaunchConfiguration("test_binary"),
-        ],
+    test_exec = GTest(
+        path=[LaunchConfiguration("test_binary")],
         output="screen",
-        parameters=[
-            moveit_config.robot_description,
-            moveit_config.robot_description_semantic,
-            moveit_config.robot_description_kinematics,
-            moveit_config.joint_limits,
-        ],
     )
-
     return (
         LaunchDescription(
             [

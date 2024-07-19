@@ -1,15 +1,17 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+from math import pi
+import time
 
 from std_msgs.msg import Header
 from geometry_msgs.msg import TwistStamped, Twist, Vector3Stamped, Vector3
 from moveit.task_constructor import core, stages
-from math import pi
-import time
 
-from moveit_commander.roscpp_initializer import roscpp_initialize
+import rclcpp
 
-roscpp_initialize("mtc_tutorial")
+rclcpp.init()
+node = rclcpp.Node("mtc_tutorial")
 
 # [cartesianTut1]
 group = "panda_arm"
@@ -23,6 +25,8 @@ jointspace = core.JointInterpolationPlanner()
 
 # [cartesianTut3]
 task = core.Task()
+task.name = "cartesian"
+task.loadRobotModel(node)
 
 # start from current robot state
 task.add(stages.CurrentState("current state"))
@@ -33,7 +37,7 @@ task.add(stages.CurrentState("current state"))
 move = stages.MoveRelative("x +0.2", cartesian)
 move.group = group
 header = Header(frame_id="world")
-move.setDirection(Vector3Stamped(header=header, vector=Vector3(0.2, 0, 0)))
+move.setDirection(Vector3Stamped(header=header, vector=Vector3(x=0.2, y=0.0, z=0.0)))
 task.add(move)
 # [initAndConfigMoveRelative]
 
@@ -41,7 +45,7 @@ task.add(move)
 # move along y
 move = stages.MoveRelative("y -0.3", cartesian)
 move.group = group
-move.setDirection(Vector3Stamped(header=header, vector=Vector3(0, -0.3, 0)))
+move.setDirection(Vector3Stamped(header=header, vector=Vector3(x=0.0, y=-0.3, z=0.0)))
 task.add(move)
 # [cartesianTut4]
 
@@ -49,7 +53,9 @@ task.add(move)
 # rotate about z
 move = stages.MoveRelative("rz +45°", cartesian)
 move.group = group
-move.setDirection(TwistStamped(header=header, twist=Twist(angular=Vector3(0, 0, pi / 4.0))))
+move.setDirection(
+    TwistStamped(header=header, twist=Twist(angular=Vector3(x=0.0, y=0.0, z=pi / 4.0)))
+)
 task.add(move)
 # [cartesianTut5]
 

@@ -1,14 +1,17 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from moveit.task_constructor import core, stages
-from moveit_commander.roscpp_initializer import roscpp_initialize
+import rclcpp
 import time
 
-roscpp_initialize("mtc_tutorial_current_state")
+rclcpp.init()
+node = rclcpp.Node("mtc_tutorial")
 
 # Create a task
 task = core.Task()
+task.name = "current state"
+task.loadRobotModel(node)
 
 # Get the current robot state
 currentState = stages.CurrentState("current state")
