@@ -314,6 +314,11 @@ void ComputeIK::compute() {
 
 		link = scene->getCurrentState().getRigidlyConnectedParentLinkModel(ik_pose_msg.header.frame_id);
 
+		if (!link) {
+			RCLCPP_WARN_STREAM(
+			    LOGGER, fmt::format("ik frame '{}' is not rigidly connected to any link", ik_pose_msg.header.frame_id));
+			return;
+		}
 		// transform target pose such that ik frame will reach there if link does
 		target_pose = target_pose * ik_pose.inverse() * scene->getCurrentState().getFrameTransform(link->getName());
 	}
