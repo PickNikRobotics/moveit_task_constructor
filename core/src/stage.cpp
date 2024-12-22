@@ -39,7 +39,7 @@
 #include <moveit/task_constructor/container_p.h>
 #include <moveit/task_constructor/introspection.h>
 
-#include <moveit/planning_scene/planning_scene.h>
+#include <moveit/planning_scene/planning_scene.hpp>
 
 #include <rclcpp/logging.hpp>
 
