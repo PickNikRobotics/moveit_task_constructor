@@ -40,8 +40,8 @@
 #include <moveit/task_constructor/storage.h>
 #include <moveit/task_constructor/cost_terms.h>
 
-#include <moveit/planning_scene/planning_scene.h>
 #include <fmt/core.h>
+#include <moveit/planning_scene/planning_scene.hpp>
 
 namespace moveit {
 namespace task_constructor {

@@ -38,9 +38,9 @@
 #include <moveit/task_constructor/storage.h>
 #include <moveit/task_constructor/marker_tools.h>
 
-#include <moveit/planning_scene/planning_scene.h>
-#include <moveit/robot_state/conversions.h>
-#include <moveit/robot_state/robot_state.h>
+#include <moveit/planning_scene/planning_scene.hpp>
+#include <moveit/robot_state/conversions.hpp>
+#include <moveit/robot_state/robot_state.hpp>
 
 #include <Eigen/Geometry>
 #if __has_include(<tf2_eigen/tf2_eigen.hpp>)
