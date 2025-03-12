@@ -151,6 +151,7 @@ bool ExecuteTaskSolutionCapability::constructMotionPlan(const moveit_task_constr
 		// define individual variable for use in closure below
 		const std::string description = std::to_string(i + 1) + "/" + std::to_string(solution.sub_trajectory.size());
 		exec_traj.description = description;
+		exec_traj.trajectory_monitoring = sub_traj.execution_info.trajectory_monitoring;
 
 		const moveit::core::JointModelGroup* group = nullptr;
 		{
