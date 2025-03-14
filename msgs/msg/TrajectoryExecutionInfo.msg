@@ -2,3 +2,4 @@
 string[] controller_names
 # If true, the trajectory is collision checked before execution.
 bool trajectory_monitoring
+
